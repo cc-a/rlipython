@@ -14,7 +14,7 @@ from IPython.utils.strdispatch import StrDispatch
 
 from IPython.core.error import TryNext, UsageError
 from IPython.core.usage import interactive_usage
-from IPython.core.inputsplitter import ESC_MAGIC
+from IPython.core.inputtransformer2 import ESC_MAGIC
 from IPython.core.interactiveshell import InteractiveShell, InteractiveShellABC
 from IPython.terminal.magics import TerminalMagics
 from IPython.utils.contexts import NoOpContext
@@ -513,6 +513,7 @@ class TerminalInteractiveShell(InteractiveShell):
         # exit_now is set by a call to %Exit or %Quit, through the
         # ask_exit callback.
 
+        self.lines_waiting = []
         while not self.exit_now:
             self.hooks.pre_prompt_hook()
             if more:
@@ -544,7 +545,8 @@ class TerminalInteractiveShell(InteractiveShell):
                 #double-guard against keyboardinterrupts during kbdint handling
                 try:
                     self.write('\n' + self.get_exception_only())
-                    source_raw = self.input_splitter.raw_reset()
+                    source_raw = ''.join(self.lines_waiting)
+                    self.lines_waiting = []
                     hlen_b4_cell = \
                         self._replace_rlhist_multiline(source_raw, hlen_b4_cell)
                     more = False
@@ -568,8 +570,8 @@ class TerminalInteractiveShell(InteractiveShell):
                 self.showtraceback()
             else:
                 try:
-                    self.input_splitter.push(line)
-                    more = self.input_splitter.push_accepts_more()
+                    self.lines_waiting.append(line)
+                    more = self.input_splitter.check_complete(''.join(self.lines_waiting))[0] == 'incomplete'
                 except SyntaxError:
                     # Run the code directly - run_cell takes care of displaying
                     # the exception.
@@ -578,7 +580,8 @@ class TerminalInteractiveShell(InteractiveShell):
                     self.autoedit_syntax):
                     self.edit_syntax_error()
                 if not more:
-                    source_raw = self.input_splitter.raw_reset()
+                    source_raw = ''.join(self.lines_waiting)
+                    self.lines_waiting = []
                     self.run_cell(source_raw, store_history=True)
                     hlen_b4_cell = \
                         self._replace_rlhist_multiline(source_raw, hlen_b4_cell)
