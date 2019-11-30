@@ -152,6 +152,10 @@ class TerminalInteractiveShell(InteractiveShell):
         default.""",
     )
 
+    # Store the number of spaces to use to indent the next line
+    # Can be either an integer or None
+    _indent_spaces = None
+
     _term_reset = "\033[0m"
     # This is ugly because not only do we have a bunch of ansi escape
     # sequences, but we also have to wrap each escape code in \001 and \002
@@ -365,6 +369,11 @@ class TerminalInteractiveShell(InteractiveShell):
             self.readline.insert_text(self.rl_next_input)
             self.rl_next_input = None
 
+    def _indent_current_str(self):
+        """Return the current level of indentation as a string"""
+        n = 0 if self._indent_spaces is None else self._indent_spaces
+        return n * " "
+
     def refill_readline_hist(self):
         # Load the last 1000 lines from history
         self.readline.clear_history()
@@ -571,7 +580,9 @@ class TerminalInteractiveShell(InteractiveShell):
             else:
                 try:
                     self.lines_waiting.append(line)
-                    more = self.input_splitter.check_complete(''.join(self.lines_waiting))[0] == 'incomplete'
+                    status, next_indent = self.input_splitter.check_complete(''.join(self.lines_waiting))
+                    self._indent_spaces = next_indent
+                    more = status == 'incomplete'
                 except SyntaxError:
                     # Run the code directly - run_cell takes care of displaying
                     # the exception.
