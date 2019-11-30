@@ -554,8 +554,9 @@ class TerminalInteractiveShell(InteractiveShell):
                 #double-guard against keyboardinterrupts during kbdint handling
                 try:
                     self.write('\n' + self.get_exception_only())
-                    source_raw = ''.join(self.lines_waiting)
+                    source_raw = '\n'.join(self.lines_waiting)
                     self.lines_waiting = []
+                    self._indent_spaces = None
                     hlen_b4_cell = \
                         self._replace_rlhist_multiline(source_raw, hlen_b4_cell)
                     more = False
@@ -580,7 +581,7 @@ class TerminalInteractiveShell(InteractiveShell):
             else:
                 try:
                     self.lines_waiting.append(line)
-                    status, next_indent = self.input_splitter.check_complete(''.join(self.lines_waiting))
+                    status, next_indent = self.input_splitter.check_complete('\n'.join(self.lines_waiting))
                     self._indent_spaces = next_indent
                     more = status == 'incomplete'
                 except SyntaxError:
@@ -591,7 +592,7 @@ class TerminalInteractiveShell(InteractiveShell):
                     self.autoedit_syntax):
                     self.edit_syntax_error()
                 if not more:
-                    source_raw = ''.join(self.lines_waiting)
+                    source_raw = '\n'.join(self.lines_waiting)
                     self.lines_waiting = []
                     self.run_cell(source_raw, store_history=True)
                     hlen_b4_cell = \
