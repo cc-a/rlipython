@@ -21,12 +21,12 @@ setup(
     name='rlipython',
     version='0.1.2',
     packages=['rlipython',],
-    install_requires=["ipython>5.3"],
+    install_requires=["ipython>=7.0.0"],
     extras_requires=extras_requires,
     license='BSD',
     author='The IPython Development Team',
     author_email='ipython-dev@python.org',
     url='https://github.com/ipython/rlipython',
-    description="readline integration for IPython 5.4+ and 6.0+",
+    description="readline integration for IPython 7.0+",
     long_description=description
 )
