@@ -21,7 +21,7 @@ setup(
     name='rlipython',
     version='0.1.2',
     packages=['rlipython',],
-    install_requires=["ipython>5.3"],
+    install_requires=["colorama", "ipython>5.3"],
     extras_requires=extras_requires,
     license='BSD',
     author='The IPython Development Team',

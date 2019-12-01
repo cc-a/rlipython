@@ -10,6 +10,8 @@ import bdb
 import os
 import sys
 
+import colorama
+
 from IPython.utils.strdispatch import StrDispatch
 
 from IPython.core.error import TryNext, UsageError
@@ -27,6 +29,8 @@ from warnings import warn
 from IPython.utils.text import num_ini_spaces
 from traitlets import Integer, CBool, Unicode, default
 
+
+colorama.init()
 
 def get_default_editor():
     try:
