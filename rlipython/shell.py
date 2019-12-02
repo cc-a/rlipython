@@ -16,7 +16,7 @@ from IPython.utils.strdispatch import StrDispatch
 
 from IPython.core.error import TryNext, UsageError
 from IPython.core.usage import interactive_usage
-from IPython.core.inputsplitter import ESC_MAGIC
+from IPython.core.inputtransformer2 import ESC_MAGIC
 from IPython.core.interactiveshell import InteractiveShell, InteractiveShellABC
 from IPython.terminal.magics import TerminalMagics
 from IPython.utils.contexts import NoOpContext
@@ -155,6 +155,10 @@ class TerminalInteractiveShell(InteractiveShell):
         curses support), specify it yourself. Otherwise don't change the
         default.""",
     )
+
+    # Store the number of spaces to use to indent the next line
+    # Can be either an integer or None
+    _indent_spaces = None
 
     _term_reset = "\033[0m"
     # This is ugly because not only do we have a bunch of ansi escape
@@ -369,6 +373,11 @@ class TerminalInteractiveShell(InteractiveShell):
             self.readline.insert_text(self.rl_next_input)
             self.rl_next_input = None
 
+    def _indent_current_str(self):
+        """Return the current level of indentation as a string"""
+        n = 0 if self._indent_spaces is None else self._indent_spaces
+        return n * " "
+
     def refill_readline_hist(self):
         # Load the last 1000 lines from history
         self.readline.clear_history()
@@ -517,6 +526,7 @@ class TerminalInteractiveShell(InteractiveShell):
         # exit_now is set by a call to %Exit or %Quit, through the
         # ask_exit callback.
 
+        self.lines_waiting = []
         while not self.exit_now:
             self.hooks.pre_prompt_hook()
             if more:
@@ -548,7 +558,9 @@ class TerminalInteractiveShell(InteractiveShell):
                 #double-guard against keyboardinterrupts during kbdint handling
                 try:
                     self.write('\n' + self.get_exception_only())
-                    source_raw = self.input_splitter.raw_reset()
+                    source_raw = '\n'.join(self.lines_waiting)
+                    self.lines_waiting = []
+                    self._indent_spaces = None
                     hlen_b4_cell = \
                         self._replace_rlhist_multiline(source_raw, hlen_b4_cell)
                     more = False
@@ -572,8 +584,10 @@ class TerminalInteractiveShell(InteractiveShell):
                 self.showtraceback()
             else:
                 try:
-                    self.input_splitter.push(line)
-                    more = self.input_splitter.push_accepts_more()
+                    self.lines_waiting.append(line)
+                    status, next_indent = self.input_splitter.check_complete('\n'.join(self.lines_waiting))
+                    self._indent_spaces = next_indent
+                    more = status == 'incomplete'
                 except SyntaxError:
                     # Run the code directly - run_cell takes care of displaying
                     # the exception.
@@ -582,7 +596,8 @@ class TerminalInteractiveShell(InteractiveShell):
                     self.autoedit_syntax):
                     self.edit_syntax_error()
                 if not more:
-                    source_raw = self.input_splitter.raw_reset()
+                    source_raw = '\n'.join(self.lines_waiting)
+                    self.lines_waiting = []
                     self.run_cell(source_raw, store_history=True)
                     hlen_b4_cell = \
                         self._replace_rlhist_multiline(source_raw, hlen_b4_cell)
