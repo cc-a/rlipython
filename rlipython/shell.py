@@ -56,7 +56,7 @@ def get_pasted_lines(sentinel, l_input=py3compat.input, quiet=False):
         prompt = ""
     while True:
         try:
-            l = py3compat.str_to_unicode(l_input(prompt))
+            l = l_input(prompt)
             if l == sentinel:
                 return
             else:
@@ -377,12 +377,10 @@ class TerminalInteractiveShell(InteractiveShell):
             if cell and (cell != last_cell):
                 try:
                     if self.multiline_history:
-                          self.readline.add_history(py3compat.unicode_to_str(cell,
-                                                                    stdin_encoding))
+                          self.readline.add_history(cell)
                     else:
                         for line in cell.splitlines():
-                            self.readline.add_history(py3compat.unicode_to_str(line,
-                                                                    stdin_encoding))
+                            self.readline.add_history(line)
                     last_cell = cell
 
                 except (TypeError, ValueError) as e:
@@ -484,8 +482,7 @@ class TerminalInteractiveShell(InteractiveShell):
         for i in range(hlen - hlen_before_cell):
             self.readline.remove_history_item(hlen - i - 1)
         stdin_encoding = get_stream_enc(sys.stdin, 'utf-8')
-        self.readline.add_history(py3compat.unicode_to_str(source_raw.rstrip(),
-                                    stdin_encoding))
+        self.readline.add_history(source_raw.rstrip())
         return self.readline.get_current_history_length()
 
     def interact(self, display_banner=None):
@@ -498,7 +495,7 @@ class TerminalInteractiveShell(InteractiveShell):
         if display_banner is None:
             display_banner = self.display_banner
 
-        if isinstance(display_banner, py3compat.string_types):
+        if isinstance(display_banner, (str,)):
             self.show_banner(display_banner)
         elif display_banner:
             self.show_banner()
@@ -598,11 +595,9 @@ class TerminalInteractiveShell(InteractiveShell):
         prompt : str, optional
           A string to be printed to prompt the user.
         """
-        # raw_input expects str, but we pass it unicode sometimes
-        prompt = py3compat.cast_bytes_py2(prompt)
 
         try:
-            line = py3compat.cast_unicode_py2(self.raw_input_original(prompt))
+            line = self.raw_input_original(prompt)
         except ValueError:
             warn("\n********\nYou or a %run:ed script called sys.stdin.close()"
                  " or sys.stdout.close()!\nExiting IPython!\n")
